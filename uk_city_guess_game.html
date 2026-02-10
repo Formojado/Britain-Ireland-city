@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guess the UK & Ireland City</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #map {
+      height: 500px;
+      width: 90%;
+      margin: 10px;
+      border-radius: 10px;
+    }
+    #question {
+      margin-top: 10px;
+      font-size: 1.3em;
+      font-weight: bold;
+    }
+    #result {
+      margin-top: 10px;
+      font-size: 1.1em;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background-color: #0056b3; }
+  </style>
+</head>
+<body>
+  <h2>🇬🇧🇮🇪 Guess the UK & Ireland City</h2>
+  <div id="question"></div>
+  <div id="map"></div>
+  <div id="result"></div>
+  <button id="nextBtn">Next City</button>
+
+  <script>
+    const cities = [
+      { name: 'London', coords: [51.5074, -0.1278] },
+      { name: 'Manchester', coords: [53.4808, -2.2426] },
+      { name: 'Edinburgh', coords: [55.9533, -3.1883] },
+      { name: 'Birmingham', coords: [52.4862, -1.8904] },
+      { name: 'Cardiff', coords: [51.4816, -3.1791] },
+      { name: 'Belfast', coords: [54.5973, -5.9301] },
+      { name: 'Dublin', coords: [53.3498, -6.2603] },
+      { name: 'Galway', coords: [53.2707, -9.0568] },
+      { name: 'Cork', coords: [51.8985, -8.4756] },
+      { name: 'Aberdeen', coords: [57.1497, -2.0943] },
+      { name: 'Swansea', coords: [51.6214, -3.9436] },
+      { name: 'York', coords: [53.9590, -1.0815] },
+      { name: 'Plymouth', coords: [50.3755, -4.1427] },
+      { name: 'Inverness', coords: [57.4778, -4.2247] },
+      { name: 'Limerick', coords: [52.6638, -8.6267] },
+      { name: 'Leeds', coords: [53.8008, -1.5491] },
+      { name: 'Liverpool', coords: [53.4084, -2.9916] },
+      { name: 'Glasgow', coords: [55.8642, -4.2518] },
+      { name: 'Newcastle upon Tyne', coords: [54.9784, -1.6174] },
+      { name: 'Sheffield', coords: [53.3811, -1.4701] },
+      { name: 'Nottingham', coords: [52.9548, -1.1581] },
+      { name: 'Leicester', coords: [52.6369, -1.1398] },
+      { name: 'Bristol', coords: [51.4545, -2.5879] },
+      { name: 'Exeter', coords: [50.7184, -3.5339] },
+      { name: 'Derry', coords: [54.9979, -7.3092] }
+    ];
+
+    let remainingCities = [...cities];
+    let currentCity = null;
+    const map = L.map('map').setView([54.5, -4], 6);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+    }).addTo(map);
+
+    let marker;
+    let clicked = false;
+
+    function nextCity() {
+      document.getElementById('result').textContent = '';
+      if (marker) map.removeLayer(marker);
+      clicked = false;
+
+      if (remainingCities.length === 0) {
+        document.getElementById('question').textContent = '🎉 All 25 cities guessed!';
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * remainingCities.length);
+      currentCity = remainingCities.splice(randomIndex, 1)[0];
+      document.getElementById('question').textContent = `Where is ${currentCity.name}? Click on the map!`;
+    }
+
+    map.on('click', function (e) {
+      if (!currentCity || clicked) return;
+      clicked = true;
+
+      const clickCoords = [e.latlng.lat, e.latlng.lng];
+
+      if (marker) map.removeLayer(marker);
+      marker = L.marker(clickCoords).addTo(map);
+
+      const dist = distance(clickCoords, currentCity.coords);
+      const resultText = `You clicked ${dist.toFixed(1)} km away from ${currentCity.name}!`;
+      document.getElementById('result').textContent = resultText;
+
+      L.circle(currentCity.coords, { radius: 5000, color: 'red' }).addTo(map);
+      L.marker(currentCity.coords).addTo(map).bindPopup(`${currentCity.name}`).openPopup();
+    });
+
+    function distance(coord1, coord2) {
+      const R = 6371;
+      const dLat = toRad(coord2[0] - coord1[0]);
+      const dLon = toRad(coord2[1] - coord1[1]);
+      const lat1 = toRad(coord1[0]);
+      const lat2 = toRad(coord2[0]);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function toRad(value) { return (value * Math.PI) / 180; }
+
+    document.getElementById('nextBtn').addEventListener('click', nextCity);
+    nextCity();
+  </script>
+</body>
+</html>
