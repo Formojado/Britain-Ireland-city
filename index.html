@@ -7,317 +7,90 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    :root{--bg1:#0f1724;--bg2:#1e3a8a;--accent:#60a5fa;--card:#ffffff;--muted:#9ca3af}
-    html,body{height:100%;margin:0;font-family:Segoe UI, Poppins, Arial, sans-serif;background:linear-gradient(180deg,var(--bg2),var(--bg1));color:#e6eef8}
-    .container{max-width:1100px;width:100%;margin:24px auto;padding:18px;box-sizing:border-box}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-    h1{margin:0;font-size:1.2rem}
+    html,body{height:100%;margin:0;font-family:Segoe UI, Poppins, Arial, sans-serif;background:#0f1724;color:#e6eef8}
+    #map{height:100vh;width:100vw;position:relative;}
 
-    /* top info bar */
-    .info{display:flex;gap:16px;align-items:center;padding:10px 14px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-    .info div{font-size:0.95rem}
-    .info .muted{color:var(--muted);font-size:0.85rem}
+    .overlay-start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:1000;}
+    .start-box{background:#fff;color:#04263b;padding:24px 36px;border-radius:12px;text-align:center;box-shadow:0 4px 30px rgba(0,0,0,0.5)}
+    .start-box h2{margin-top:0;margin-bottom:8px}
+    .btn{background:#60a5fa;color:#04263b;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;}
 
-    /* map area */
-    #mapwrap{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(2,6,23,0.7);}
-    #map{height:620px;width:100%}
-
-    /* controls */
-    .controls{display:flex;gap:10px;align-items:center;margin-top:12px}
-    button.btn{background:var(--accent);color:#04263b;border:none;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
-    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.08);color:inherit}
-
-    /* overlay start */
-    .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(0deg,rgba(2,6,23,0.65),rgba(2,6,23,0.35));backdrop-filter:blur(2px)}
-    .startcard{background:#fff;border-radius:12px;padding:28px 34px;color:#04263b;text-align:center;min-width:320px}
-    .startcard h2{margin:0 0 8px 0}
-    .startcard p{margin:0 0 14px;color:#334155}
-    .countdown{font-size:2.8rem;font-weight:800;margin-top:8px}
-
-    /* modal */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:flex;align-items:center;justify-content:center}
-    .modal{background:#fff;color:#04263b;padding:22px;border-radius:12px;min-width:320px;max-width:460px;box-shadow:0 20px 60px rgba(2,6,23,0.6);text-align:center}
+    .info-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);padding:8px 14px;border-radius:8px;display:flex;gap:16px;z-index:900;color:#fff;font-size:0.95rem;}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:flex;align-items:center;justify-content:center;z-index:2000;}
+    .modal{background:#fff;color:#04263b;padding:22px;border-radius:12px;min-width:320px;text-align:center;}
     .modal h3{margin:0 0 8px}
-    .stats{display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:0.96rem}
-    .playagain{margin-top:14px}
-
-    /* small text */
-    .small{font-size:0.85rem;color:var(--muted)}
-
-    @media (max-width:900px){#map{height:520px}}
-    @media (max-width:600px){.startcard{min-width:260px;padding:18px}}
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>🇬🇧🇮🇪 UK & Ireland — City Speedrun</h1>
-      <div class="small">Built for speed: 50 cities · 10 km success radius</div>
-    </header>
+  <div id="map"></div>
+  <div class="info-bar">
+    <div>⏱️ Time: <span id="time">00:00</span></div>
+    <div>📍 Progress: <span id="progress">0</span> / <span id="total">50</span></div>
+    <div>⭐ Score: <span id="score">0</span></div>
+  </div>
 
-    <div class="info">
-      <div class="time">⏱️ Time: <span id="time">00:00</span></div>
-      <div class="progress muted">📍 Progress: <span id="progress">0</span> / <span id="total">50</span></div>
-      <div class="score">⭐ Score: <span id="score">0</span></div>
-      <div style="margin-left:auto" class="small muted">Tip: click the map once per city</div>
-    </div>
-
-    <div id="mapwrap" style="margin-top:12px">
-      <div id="map"></div>
-
-      <!-- start overlay -->
-      <div id="startOverlay" class="overlay">
-        <div class="startcard">
-          <h2>Ready to speedrun?</h2>
-          <p>Guess 50 cities across the UK & Ireland. Within 10 km counts as success.</p>
-          <button id="startBtn" class="btn">Start Game</button>
-          <div style="margin-top:12px;color:#475569;font-size:0.9rem">Or press <strong>Space</strong> to start</div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="controls">
-      <button id="nextBtn" class="ghost">Skip (counts as fail)</button>
-      <button id="restartBtn" class="ghost">Restart</button>
-      <div style="margin-left:auto" class="small muted">Score formula: max(0, 100 - distance_km*10)</div>
+  <div id="overlayStart" class="overlay-start">
+    <div class="start-box">
+      <h2>UK & Ireland City Speedrun</h2>
+      <p>Find 50 cities — within 10 km counts as success</p>
+      <button id="startBtn" class="btn">Start</button>
     </div>
   </div>
 
-  <!-- end modal -->
   <div id="endModal" style="display:none" class="modal-backdrop">
     <div class="modal">
       <h3>🎉 Run Complete</h3>
-      <div class="stats" id="stats"></div>
-      <div class="playagain">
-        <button id="playAgainBtn" class="btn">Play Again</button>
-      </div>
+      <div id="stats"></div>
+      <div style="margin-top:14px"><button id="playAgainBtn" class="btn">Play Again</button></div>
     </div>
   </div>
 
   <script>
-    // --- City list (50) ---
     const ALL_CITIES = [
-      {name:'London', coords:[51.5074,-0.1278]},
-      {name:'Birmingham', coords:[52.4862,-1.8904]},
-      {name:'Manchester', coords:[53.4808,-2.2426]},
-      {name:'Leeds', coords:[53.8008,-1.5491]},
-      {name:'Liverpool', coords:[53.4084,-2.9916]},
-      {name:'Sheffield', coords:[53.3811,-1.4701]},
-      {name:'Bristol', coords:[51.4545,-2.5879]},
-      {name:'Leicester', coords:[52.6369,-1.1398]},
-      {name:'Nottingham', coords:[52.9548,-1.1581]},
-      {name:'Newcastle upon Tyne', coords:[54.9783,-1.6178]},
-      {name:'Portsmouth', coords:[50.8198,-1.0870]},
-      {name:'Southampton', coords:[50.9097,-1.4044]},
-      {name:'Oxford', coords:[51.7520,-1.2577]},
-      {name:'Cambridge', coords:[52.2053,0.1218]},
-      {name:'Coventry', coords:[52.4068,-1.5197]},
-      {name:'Bradford', coords:[53.7950,-1.7594]},
-      {name:'Stoke-on-Trent', coords:[53.0027,-2.1794]},
-      {name:'Reading', coords:[51.4543,-0.9781]},
-      {name:'Plymouth', coords:[50.3755,-4.1427]},
-      {name:'Brighton', coords:[50.8225,-0.1372]},
-      {name:'Norwich', coords:[52.6309,1.2974]},
-      {name:'Derby', coords:[52.9225,-1.4746]},
-      {name:'Hull', coords:[53.7676,-0.3274]},
-      {name:'Sunderland', coords:[54.9069,-1.3838]},
-      {name:'Middlesbrough', coords:[54.5742,-1.2348]},
-      {name:'Edinburgh', coords:[55.9533,-3.1883]},
-      {name:'Glasgow', coords:[55.8642,-4.2518]},
-      {name:'Aberdeen', coords:[57.1497,-2.0943]},
-      {name:'Dundee', coords:[56.4620,-2.9707]},
-      {name:'Inverness', coords:[57.4778,-4.2247]},
-      {name:'Cardiff', coords:[51.4816,-3.1791]},
-      {name:'Swansea', coords:[51.6214,-3.9436]},
-      {name:'Wrexham', coords:[53.0456,-2.9958]},
-      {name:'Newport', coords:[51.5842,-2.9977]},
-      {name:'Belfast', coords:[54.5973,-5.9301]},
-      {name:'Derry', coords:[54.9979,-7.3092]},
-      {name:'Dublin', coords:[53.3498,-6.2603]},
-      {name:'Cork', coords:[51.8985,-8.4756]},
-      {name:'Limerick', coords:[52.6638,-8.6267]},
-      {name:'Galway', coords:[53.2707,-9.0568]},
-      {name:'Waterford', coords:[52.2593,-7.1101]},
-      {name:'Kilkenny', coords:[52.6541,-7.2448]},
-      {name:'Chester', coords:[53.1910,-2.8930]},
-      {name:'Lancaster', coords:[54.0470,-2.8000]},
-      {name:'Bath', coords:[51.3811,-2.3590]},
-      {name:'Blackpool', coords:[53.8142,-3.0500]},
-      {name:'York', coords:[53.9590,-1.0815]},
-      {name:'Peterborough', coords:[52.5695,-0.2405]},
-      {name:'Lerwick', coords:[60.1550,-1.1456]}
+      {name:'London', coords:[51.5074,-0.1278]}, {name:'Birmingham', coords:[52.4862,-1.8904]}, {name:'Manchester', coords:[53.4808,-2.2426]}, {name:'Leeds', coords:[53.8008,-1.5491]}, {name:'Liverpool', coords:[53.4084,-2.9916]}, {name:'Sheffield', coords:[53.3811,-1.4701]}, {name:'Bristol', coords:[51.4545,-2.5879]}, {name:'Leicester', coords:[52.6369,-1.1398]}, {name:'Nottingham', coords:[52.9548,-1.1581]}, {name:'Newcastle upon Tyne', coords:[54.9783,-1.6178]}, {name:'Portsmouth', coords:[50.8198,-1.0870]}, {name:'Southampton', coords:[50.9097,-1.4044]}, {name:'Oxford', coords:[51.7520,-1.2577]}, {name:'Cambridge', coords:[52.2053,0.1218]}, {name:'Coventry', coords:[52.4068,-1.5197]}, {name:'Bradford', coords:[53.7950,-1.7594]}, {name:'Stoke-on-Trent', coords:[53.0027,-2.1794]}, {name:'Reading', coords:[51.4543,-0.9781]}, {name:'Plymouth', coords:[50.3755,-4.1427]}, {name:'Brighton', coords:[50.8225,-0.1372]}, {name:'Norwich', coords:[52.6309,1.2974]}, {name:'Derby', coords:[52.9225,-1.4746]}, {name:'Hull', coords:[53.7676,-0.3274]}, {name:'Sunderland', coords:[54.9069,-1.3838]}, {name:'Middlesbrough', coords:[54.5742,-1.2348]}, {name:'Edinburgh', coords:[55.9533,-3.1883]}, {name:'Glasgow', coords:[55.8642,-4.2518]}, {name:'Aberdeen', coords:[57.1497,-2.0943]}, {name:'Dundee', coords:[56.4620,-2.9707]}, {name:'Inverness', coords:[57.4778,-4.2247]}, {name:'Cardiff', coords:[51.4816,-3.1791]}, {name:'Swansea', coords:[51.6214,-3.9436]}, {name:'Belfast', coords:[54.5973,-5.9301]}, {name:'Derry', coords:[54.9979,-7.3092]}, {name:'Dublin', coords:[53.3498,-6.2603]}, {name:'Cork', coords:[51.8985,-8.4756]}, {name:'Limerick', coords:[52.6638,-8.6267]}, {name:'Galway', coords:[53.2707,-9.0568]}, {name:'Waterford', coords:[52.2593,-7.1101]}, {name:'Kilkenny', coords:[52.6541,-7.2448]}, {name:'Chester', coords:[53.1910,-2.8930]}, {name:'Lancaster', coords:[54.0470,-2.8000]}, {name:'Bath', coords:[51.3811,-2.3590]}, {name:'Blackpool', coords:[53.8142,-3.0500]}, {name:'York', coords:[53.9590,-1.0815]}, {name:'Peterborough', coords:[52.5695,-0.2405]}, {name:'Lerwick', coords:[60.1550,-1.1456]}
     ];
 
-    // --- game state ---
     const TOTAL = 50;
-    let cities = [];
-    let index = 0;
-    let started = false;
-    let answered = false;
-    let markers = [];
-    let circles = [];
-    let score = 0;
-    let startTime = null;
-    let timerInterval = null;
-    let results = []; // {city,dist,points,ok}
+    let cities=[],index=0,started=false,answered=false,markers=[],circles=[],score=0,startTime=null,timerInterval=null,results=[];
 
-    // --- map setup ---
-    const map = L.map('map', {zoomControl:true,dragging:true}).setView([54.5,-4],6);
+    const map = L.map('map',{zoomControl:true,dragging:true}).setView([54.5,-4],6);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
 
-    // helpers
-    function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-
-    function toRad(v){return v*Math.PI/180}
-    function haversine(a,b){const R=6371;const dLat=toRad(b[0]-a[0]);const dLon=toRad(b[1]-a[1]);const lat1=toRad(a[0]);const lat2=toRad(b[0]);const aa=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(aa),Math.sqrt(1-aa))}
-
-    function formatTime(ms){const s=Math.floor(ms/1000);const mm=Math.floor(s/60);const ss=s%60;return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`}
-
-    // UI elements
     const timeEl=document.getElementById('time');
     const progressEl=document.getElementById('progress');
     const totalEl=document.getElementById('total');
     const scoreEl=document.getElementById('score');
-    const startOverlay=document.getElementById('startOverlay');
+    const overlayStart=document.getElementById('overlayStart');
     const startBtn=document.getElementById('startBtn');
-    const nextBtn=document.getElementById('nextBtn');
-    const restartBtn=document.getElementById('restartBtn');
     const endModal=document.getElementById('endModal');
     const statsEl=document.getElementById('stats');
     const playAgainBtn=document.getElementById('playAgainBtn');
 
-    totalEl.textContent = TOTAL;
+    totalEl.textContent=TOTAL;
 
-    // start flow
-    function resetGame(){
-      // shuffle and pick first TOTAL
-      cities = shuffle(ALL_CITIES.slice()).slice(0,TOTAL);
-      index = 0; started=false; answered=false; score=0; results=[];
-      clearMapObjects(); updateUI();
-      timeEl.textContent='00:00'; scoreEl.textContent=score; progressEl.textContent='0';
-      if(timerInterval){clearInterval(timerInterval);timerInterval=null}
-      startOverlay.style.display='flex'; endModal.style.display='none';
-      map.setView([54.5,-4],6);
-    }
+    function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+    function toRad(v){return v*Math.PI/180}
+    function haversine(a,b){const R=6371;const dLat=toRad(b[0]-a[0]);const dLon=toRad(b[1]-a[1]);const lat1=toRad(a[0]);const lat2=toRad(b[0]);const aa=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(aa),Math.sqrt(1-aa))}
+    function formatTime(ms){const s=Math.floor(ms/1000);const mm=Math.floor(s/60);const ss=s%60;return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`}
 
-    function startGame(){
-      startOverlay.style.display='none'; started=true; startTime=Date.now();
-      timerInterval=setInterval(()=>{timeEl.textContent=formatTime(Date.now()-startTime)},300);
-      showNextCity();
-    }
+    function resetGame(){cities=shuffle(ALL_CITIES.slice()).slice(0,TOTAL);index=0;started=false;answered=false;score=0;results=[];clearMapObjects();updateUI();timeEl.textContent='00:00';scoreEl.textContent=score;progressEl.textContent='0';if(timerInterval){clearInterval(timerInterval);timerInterval=null}overlayStart.style.display='flex';endModal.style.display='none';map.setView([54.5,-4],6);}
 
-    function showNextCity(){
-      clearMapObjects(); answered=false; progressEl.textContent = `${index}/${TOTAL}`; // shows current before increment
+    function startGame(){overlayStart.style.display='none';started=true;startTime=Date.now();timerInterval=setInterval(()=>{timeEl.textContent=formatTime(Date.now()-startTime)},300);showNextCity();}
 
-      if(index>=TOTAL){endGame();return}
+    function updateUI(){progressEl.textContent=`${index}/${TOTAL}`;scoreEl.textContent=score;}
 
-      const city = cities[index];
-      // prompt display (use popup marker or console)
-      // we will display a subtle marker instruction via map
-      displayQuestion(city);
-    }
+    function showNextCity(){clearMapObjects();answered=false;updateUI();if(index>=TOTAL){endGame();return;}document.title=`Guess #${index+1}`;}
 
-    function displayQuestion(city){
-      // show a transient popup at top-left of mapwrap
-      // we won't add a marker for the city (that would reveal answer)
-      // allow clicking now
-      // update a floating question in console area (not added) - use browser title for hint
-      document.title = `Where is ${city.name}? — ${index+1}/${TOTAL}`;
-    }
+    map.on('click',function(e){if(!started||answered)return;answered=true;const clickCoords=[e.latlng.lat,e.latlng.lng];const city=cities[index];const m=L.marker(clickCoords).addTo(map);markers.push(m);const dist=haversine(clickCoords,city.coords);const c=L.circle(city.coords,{radius:10000,color:'#ff385c',fill:false}).addTo(map);circles.push(c);L.marker(city.coords).addTo(map);let points=0;let ok=false;if(dist<=10){ok=true;points=Math.max(0,Math.round(100-dist*10));}score+=points;results.push({city:city.name,dist:dist,points:points,ok:ok});L.popup({maxWidth:280,closeButton:false,autoClose:true}).setLatLng(clickCoords).setContent(`<div style='font-weight:700'>${city.name}: ${dist.toFixed(1)} km — ${ok?('Success +'+points+' pts'):'Fail (0)'}</div>`).openOn(map);index++;updateUI();setTimeout(()=>{showNextCity()},1000);});
 
-    // click handling
-    map.on('click', function(e){
-      if(!started||answered) return;
-      answered=true;
-      const clickCoords=[e.latlng.lat,e.latlng.lng];
-      const city = cities[index];
+    function clearMapObjects(){markers.forEach(m=>map.removeLayer(m));markers=[];circles.forEach(c=>map.removeLayer(c));circles=[];}
 
-      // add player's marker
-      const m = L.marker(clickCoords).addTo(map); markers.push(m);
+    function endGame(){started=false;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}const totalTime=Date.now()-startTime;const correct=results.filter(r=>r.ok).length;const distList=results.filter(r=>r.dist!==null).map(r=>r.dist);const avgDist=distList.length?(distList.reduce((s,v)=>s+v,0)/distList.length):0;const best=distList.length?Math.min(...distList):null;statsEl.innerHTML=`<div style='font-weight:700'>Score: ${score}</div><div>Correct: ${correct} / ${TOTAL}</div><div>Avg. distance: ${avgDist.toFixed(1)} km</div><div>Best: ${best===null?'-':best.toFixed(1)} km</div><div>Total time: ${formatTime(totalTime)}</div>`;endModal.style.display='flex';}
 
-      // distance
-      const dist = haversine(clickCoords, city.coords);
+    startBtn.addEventListener('click',()=>{startGame()});
+    playAgainBtn.addEventListener('click',()=>{resetGame()});
 
-      // show target circle and marker
-      const c = L.circle(city.coords,{radius:10000,color:'#ff385c',fill:false}).addTo(map); circles.push(c);
-      const targetMarker = L.marker(city.coords).addTo(map); markers.push(targetMarker);
-
-      // compute score
-      let points = 0; let ok=false;
-      if(dist<=10){ok=true; points = Math.max(0, Math.round(100 - dist*10));}
-      else {ok=false; points=0}
-      score += points;
-      results.push({city:city.name,dist:dist,points:points,ok:ok});
-
-      // show quick popup
-      const resultText = `${city.name}: ${dist.toFixed(1)} km — ${ok?('Success +'+points+' pts'):'Fail (0)'} `;
-      const popup = L.popup({maxWidth:280,closeButton:false,autoClose:true})
-        .setLatLng(clickCoords)
-        .setContent(`<div style="font-weight:700">${resultText}</div>`)
-        .openOn(map);
-
-      // update UI
-      progressEl.textContent = `${index+1}/${TOTAL}`;
-      scoreEl.textContent = score;
-
-      // auto next after short delay
-      setTimeout(()=>{index++; showNextCity()},1000);
-    });
-
-    // allow skip as fail
-    nextBtn.addEventListener('click', ()=>{
-      if(!started) return; if(answered) return; answered=true;
-      const city=cities[index]; results.push({city:city.name,dist:null,points:0,ok:false}); index++; progressEl.textContent=`${index}/${TOTAL}`; setTimeout(()=>{showNextCity()},800);
-    });
-
-    restartBtn.addEventListener('click', ()=>{resetGame()});
-
-    // end game
-    function endGame(){
-      started=false; if(timerInterval){clearInterval(timerInterval);timerInterval=null}
-      const totalTime = Date.now()-startTime;
-      const correct = results.filter(r=>r.ok).length;
-      const avgDist = (results.filter(r=>r.dist!==null).reduce((s,r)=>s+(r.dist||0),0) / Math.max(1, results.filter(r=>r.dist!==null).length));
-      const best = results.filter(r=>r.dist!==null).reduce((best,r)=>best===null||r.dist<best?r.dist:best,null);
-      statsEl.innerHTML = `
-        <div style="font-weight:700;">Score: ${score}</div>
-        <div class="small">Correct: ${correct} / ${TOTAL}</div>
-        <div class="small">Avg. distance: ${isNaN(avgDist)?'-':avgDist.toFixed(1)} km</div>
-        <div class="small">Best distance: ${best===null?'-':best.toFixed(1)} km</div>
-        <div class="small">Total time: ${formatTime(totalTime)}</div>
-      `;
-      endModal.style.display='flex';
-    }
-
-    playAgainBtn.addEventListener('click', ()=>{resetGame()});
-
-    // clear markers/circles
-    function clearMapObjects(){
-      markers.forEach(m=>map.removeLayer(m)); markers=[];
-      circles.forEach(c=>map.removeLayer(c)); circles=[];
-    }
-
-    // keyboard start
-    document.addEventListener('keydown', (e)=>{ if(e.code==='Space'){ if(!started) startGame(); e.preventDefault(); }});
-
-    // start button with countdown
-    startBtn.addEventListener('click', ()=>{startCountdown(3)});
-
-    function startCountdown(n){
-      // show numeric countdown in overlay
-      let count=n; const overlay=startOverlay; const card=overlay.querySelector('.startcard');
-      const originalInner = card.innerHTML;
-      function tick(){
-        card.innerHTML = `<div style="color:#0f1724"><div style="font-size:0.95rem;font-weight:700;margin-bottom:8px">Get ready</div><div class=\"countdown\">${count}</div></div>`;
-        if(count>0){count--; setTimeout(tick,700);} else {card.innerHTML=`<div style=\"color:#04263b\"><div class=\"countdown\">Go!</div></div>`; setTimeout(()=>{overlay.style.display='none'; startGame();},500)}
-      }
-      tick();
-    }
-
-    // init
     resetGame();
-
   </script>
 </body>
 </html>
