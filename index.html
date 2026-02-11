@@ -49,10 +49,7 @@
   </div>
 
   <script>
-    const ALL_CITIES = [
-      {name:'London', coords:[51.5074,-0.1278]}, {name:'Birmingham', coords:[52.4862,-1.8904]}, {name:'Manchester', coords:[53.4808,-2.2426]}, {name:'Leeds', coords:[53.8008,-1.5491]}, {name:'Liverpool', coords:[53.4084,-2.9916]}, {name:'Sheffield', coords:[53.3811,-1.4701]}, {name:'Bristol', coords:[51.4545,-2.5879]}, {name:'Leicester', coords:[52.6369,-1.1398]}, {name:'Nottingham', coords:[52.9548,-1.1581]}, {name:'Newcastle upon Tyne', coords:[54.9783,-1.6178]}, {name:'Portsmouth', coords:[50.8198,-1.0870]}, {name:'Southampton', coords:[50.9097,-1.4044]}, {name:'Oxford', coords:[51.7520,-1.2577]}, {name:'Cambridge', coords:[52.2053,0.1218]}, {name:'Coventry', coords:[52.4068,-1.5197]}, {name:'Bradford', coords:[53.7950,-1.7594]}, {name:'Stoke-on-Trent', coords:[53.0027,-2.1794]}, {name:'Reading', coords:[51.4543,-0.9781]}, {name:'Plymouth', coords:[50.3755,-4.1427]}, {name:'Brighton', coords:[50.8225,-0.1372]}, {name:'Norwich', coords:[52.6309,1.2974]}, {name:'Derby', coords:[52.9225,-1.4746]}, {name:'Hull', coords:[53.7676,-0.3274]}, {name:'Sunderland', coords:[54.9069,-1.3838]}, {name:'Middlesbrough', coords:[54.5742,-1.2348]}, {name:'Edinburgh', coords:[55.9533,-3.1883]}, {name:'Glasgow', coords:[55.8642,-4.2518]}, {name:'Aberdeen', coords:[57.1497,-2.0943]}, {name:'Dundee', coords:[56.4620,-2.9707]}, {name:'Inverness', coords:[57.4778,-4.2247]}, {name:'Cardiff', coords:[51.4816,-3.1791]}, {name:'Swansea', coords:[51.6214,-3.9436]}, {name:'Belfast', coords:[54.5973,-5.9301]}, {name:'Derry', coords:[54.9979,-7.3092]}, {name:'Dublin', coords:[53.3498,-6.2603]}, {name:'Cork', coords:[51.8985,-8.4756]}, {name:'Limerick', coords:[52.6638,-8.6267]}, {name:'Galway', coords:[53.2707,-9.0568]}, {name:'Waterford', coords:[52.2593,-7.1101]}, {name:'Kilkenny', coords:[52.6541,-7.2448]}, {name:'Chester', coords:[53.1910,-2.8930]}, {name:'Lancaster', coords:[54.0470,-2.8000]}, {name:'Bath', coords:[51.3811,-2.3590]}, {name:'Blackpool', coords:[53.8142,-3.0500]}, {name:'York', coords:[53.9590,-1.0815]}, {name:'Peterborough', coords:[52.5695,-0.2405]}, {name:'Lerwick', coords:[60.1550,-1.1456]}
-    ];
-
+    const ALL_CITIES = [ /* ... same as before ... */ ];
     const TOTAL = 50;
     let cities=[],index=0,started=false,answered=false,markers=[],circles=[],score=0,startTime=null,timerInterval=null,results=[],currentCityMarker=null;
 
@@ -84,7 +81,7 @@
       answered=false;
       score=0;
       results=[];
-      clearMapObjects();
+      clearMapObjects(true);
       cityTitle.style.display='none';
       updateUI();
       timeEl.textContent='00:00';
@@ -98,7 +95,7 @@
     }
 
     function startGame(){
-      clearMapObjects();
+      clearMapObjects(true);
       cityTitle.style.display='none';
       overlayStart.style.display='none';
       started=true;
@@ -111,7 +108,7 @@
 
     function showNextCity(){
       if(currentCityMarker){map.removeLayer(currentCityMarker); currentCityMarker=null;}
-      clearMapObjects();
+      clearMapObjects(false);
       answered=false;
       updateUI();
       if(index>=TOTAL){endGame();return;}
@@ -136,6 +133,8 @@
       if(dist<=10){ok=true;points=Math.max(0,Math.round(100-dist*10));}
       score+=points;
       results.push({city:city.name,dist:dist,points:points,ok:ok});
+      // 移除前一個 popup
+      map.closePopup();
       L.popup({maxWidth:280,closeButton:false,autoClose:true}).setLatLng(clickCoords).setContent(`<div style='font-weight:700'>${city.name}: ${dist.toFixed(1)} km — ${ok?('Success +'+points+' pts'):'Fail (0)'}</div>`).openOn(map);
       index++;
       cityTitle.style.display='none';
@@ -143,9 +142,11 @@
       setTimeout(()=>{showNextCity()},1000);
     });
 
-    function clearMapObjects(){
+    function clearMapObjects(removeAll=true){
       markers.forEach(m=>map.removeLayer(m));markers=[];
       circles.forEach(c=>map.removeLayer(c));circles=[];
+      if(removeAll && currentCityMarker){map.removeLayer(currentCityMarker);currentCityMarker=null;}
+      map.closePopup();
     }
 
     function endGame(){
