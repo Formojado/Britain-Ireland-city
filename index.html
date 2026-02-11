@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     html,body{height:100%;margin:0;font-family:Segoe UI, Poppins, Arial, sans-serif;background:#0f1724;color:#e6eef8}
-    #map{height:100vh;width:100vw;position:relative;filter:brightness(0.6);}
+    #map{height:100vh;width:100vw;position:relative;}
 
     .overlay-start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:1000;pointer-events:auto;}
     .start-box{background:#fff;color:#04263b;padding:24px 36px;border-radius:12px;text-align:center;box-shadow:0 4px 30px rgba(0,0,0,0.5)}
@@ -77,19 +77,84 @@
     function haversine(a,b){const R=6371;const dLat=toRad(b[0]-a[0]);const dLon=toRad(b[1]-a[1]);const lat1=toRad(a[0]);const lat2=toRad(b[0]);const aa=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(aa),Math.sqrt(1-aa))}
     function formatTime(ms){const s=Math.floor(ms/1000);const mm=Math.floor(s/60);const ss=s%60;return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`}
 
-    function resetGame(){cities=shuffle(ALL_CITIES.slice()).slice(0,TOTAL);index=0;started=false;answered=false;score=0;results=[];clearMapObjects();updateUI();timeEl.textContent='00:00';scoreEl.textContent=score;progressEl.textContent='0';cityTitle.style.display='none';if(timerInterval){clearInterval(timerInterval);timerInterval=null}overlayStart.style.display='flex';overlayStart.style.pointerEvents='auto';endModal.style.display='none';map.setView([54.5,-4],6);}
+    function resetGame(){
+      cities=shuffle(ALL_CITIES.slice()).slice(0,TOTAL);
+      index=0;
+      started=false;
+      answered=false;
+      score=0;
+      results=[];
+      clearMapObjects();
+      cityTitle.style.display='none';
+      updateUI();
+      timeEl.textContent='00:00';
+      scoreEl.textContent=score;
+      progressEl.textContent='0';
+      if(timerInterval){clearInterval(timerInterval);timerInterval=null}
+      overlayStart.style.display='flex';
+      overlayStart.style.pointerEvents='auto';
+      endModal.style.display='none';
+      map.setView([54.5,-4],6);
+    }
 
-    function startGame(){overlayStart.style.display='none';started=true;startTime=Date.now();timerInterval=setInterval(()=>{timeEl.textContent=formatTime(Date.now()-startTime)},300);showNextCity();}
+    function startGame(){
+      clearMapObjects();
+      cityTitle.style.display='none';
+      overlayStart.style.display='none';
+      started=true;
+      startTime=Date.now();
+      timerInterval=setInterval(()=>{timeEl.textContent=formatTime(Date.now()-startTime)},300);
+      showNextCity();
+    }
 
     function updateUI(){progressEl.textContent=`${index}/${TOTAL}`;scoreEl.textContent=score;}
 
-    function showNextCity(){clearMapObjects();answered=false;updateUI();if(index>=TOTAL){endGame();return;}cityTitle.textContent=cities[index].name;cityTitle.style.display='block';document.title=`Guess #${index+1}`;}
+    function showNextCity(){
+      clearMapObjects();
+      answered=false;
+      updateUI();
+      if(index>=TOTAL){endGame();return;}
+      cityTitle.textContent=cities[index].name;
+      cityTitle.style.display='block';
+      document.title=`Guess #${index+1}`;
+    }
 
-    map.on('click',function(e){if(!started||answered)return;answered=true;const clickCoords=[e.latlng.lat,e.latlng.lng];const city=cities[index];const m=L.marker(clickCoords).addTo(map);markers.push(m);const dist=haversine(clickCoords,city.coords);const c=L.circle(city.coords,{radius:10000,color:'#ff385c',fill:false}).addTo(map);circles.push(c);L.marker(city.coords).addTo(map);let points=0;let ok=false;if(dist<=10){ok=true;points=Math.max(0,Math.round(100-dist*10));}score+=points;results.push({city:city.name,dist:dist,points:points,ok:ok});L.popup({maxWidth:280,closeButton:false,autoClose:true}).setLatLng(clickCoords).setContent(`<div style='font-weight:700'>${city.name}: ${dist.toFixed(1)} km — ${ok?('Success +'+points+' pts'):'Fail (0)'}</div>`).openOn(map);index++;cityTitle.style.display='none';updateUI();setTimeout(()=>{showNextCity()},1000);});
+    map.on('click',function(e){
+      if(!started||answered)return;
+      answered=true;
+      const clickCoords=[e.latlng.lat,e.latlng.lng];
+      const city=cities[index];
+      const m=L.marker(clickCoords).addTo(map);
+      markers.push(m);
+      const dist=haversine(clickCoords,city.coords);
+      const c=L.circle(city.coords,{radius:10000,color:'#ff385c',fill:false}).addTo(map);
+      circles.push(c);
+      L.marker(city.coords).addTo(map);
+      let points=0;
+      let ok=false;
+      if(dist<=10){ok=true;points=Math.max(0,Math.round(100-dist*10));}
+      score+=points;
+      results.push({city:city.name,dist:dist,points:points,ok:ok});
+      L.popup({maxWidth:280,closeButton:false,autoClose:true}).setLatLng(clickCoords).setContent(`<div style='font-weight:700'>${city.name}: ${dist.toFixed(1)} km — ${ok?('Success +'+points+' pts'):'Fail (0)'}</div>`).openOn(map);
+      index++;
+      cityTitle.style.display='none';
+      updateUI();
+      setTimeout(()=>{showNextCity()},1000);
+    });
 
     function clearMapObjects(){markers.forEach(m=>map.removeLayer(m));markers=[];circles.forEach(c=>map.removeLayer(c));circles=[];}
 
-    function endGame(){started=false;if(timerInterval){clearInterval(timerInterval);timerInterval=null;}const totalTime=Date.now()-startTime;const correct=results.filter(r=>r.ok).length;const distList=results.filter(r=>r.dist!==null).map(r=>r.dist);const avgDist=distList.length?(distList.reduce((s,v)=>s+v,0)/distList.length):0;const best=distList.length?Math.min(...distList):null;statsEl.innerHTML=`<div style='font-weight:700'>Score: ${score}</div><div>Correct: ${correct} / ${TOTAL}</div><div>Avg. distance: ${avgDist.toFixed(1)} km</div><div>Best: ${best===null?'-':best.toFixed(1)} km</div><div>Total time: ${formatTime(totalTime)}</div>`;endModal.style.display='flex';}
+    function endGame(){
+      started=false;
+      if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+      const totalTime=Date.now()-startTime;
+      const correct=results.filter(r=>r.ok).length;
+      const distList=results.filter(r=>r.dist!==null).map(r=>r.dist);
+      const avgDist=distList.length?(distList.reduce((s,v)=>s+v,0)/distList.length):0;
+      const best=distList.length?Math.min(...distList):null;
+      statsEl.innerHTML=`<div style='font-weight:700'>Score: ${score}</div><div>Correct: ${correct} / ${TOTAL}</div><div>Avg. distance: ${avgDist.toFixed(1)} km</div><div>Best: ${best===null?'-':best.toFixed(1)} km</div><div>Total time: ${formatTime(totalTime)}</div>`;
+      endModal.style.display='flex';
+    }
 
     startBtn.addEventListener('click',()=>{startGame()});
     playAgainBtn.addEventListener('click',()=>{resetGame()});
