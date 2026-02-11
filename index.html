@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,31 +7,35 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    html,body{height:100%;margin:0;font-family:'Segoe UI', Roboto, sans-serif;background:#0f1724;color:#e6eef8;overflow:hidden;}
+    html,body{height:100%;margin:0;font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;background:#0f1724;color:#e6eef8;overflow:hidden;}
     #map{height:100vh;width:100vw;position:relative;z-index: 1;}
 
-    .overlay-start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15, 23, 42, 0.9);z-index:1000;}
-    .start-box{background:#fff;color:#04263b;padding:35px;border-radius:20px;text-align:center;box-shadow:0 15px 50px rgba(0,0,0,0.6);max-width:420px; line-height: 1.6;}
-    .start-box h2{margin:0 0 15px 0; color:#1e293b; font-size: 1.8rem;}
+    /* Start Screen */
+    .overlay-start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15, 23, 42, 0.95);z-index:1000;}
+    .start-box{background:#fff;color:#04263b;padding:40px;border-radius:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);max-width:450px; line-height: 1.6;}
+    .start-box h2{margin:0 0 15px 0; color:#1e293b; font-size: 2rem;}
     
-    .info-bar{position:absolute;top:15px;left:50%;transform:translateX(-50%);background:rgba(15, 23, 42, 0.9);padding:12px 25px;border-radius:15px;display:flex;gap:25px;z-index:900;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);box-shadow:0 8px 32px rgba(0,0,0,0.5);}
-    .info-item{display:flex;flex-direction:column;align-items:center; min-width: 60px;}
-    .info-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;opacity:0.7;margin-bottom:4px;}
-    .info-value{font-size:1.2rem;font-weight:800; font-variant-numeric: tabular-nums;}
+    /* Info Bar */
+    .info-bar{position:absolute;top:15px;left:50%;transform:translateX(-50%);background:rgba(15, 23, 42, 0.9);padding:12px 30px;border-radius:18px;display:flex;gap:30px;z-index:900;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+    .info-item{display:flex;flex-direction:column;align-items:center; min-width: 70px;}
+    .info-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:4px;}
+    .info-value{font-size:1.3rem;font-weight:800; font-variant-numeric: tabular-nums;}
 
-    /* 狀態顏色設定 */
-    .status-alive{color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.5);}
-    .status-dead{color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.5); animation: blink 0.8s infinite;}
+    /* Status Colors */
+    .status-alive{color: #10b981; text-shadow: 0 0 12px rgba(16,185,129,0.7);}
+    .status-dead{color: #ef4444; text-shadow: 0 0 12px rgba(239,68,68,0.7); animation: blink 0.8s infinite;}
 
-    .city-title{position:absolute;top:110px;left:50%;transform:translateX(-50%);z-index:1001;font-size:2.5rem;font-weight:900;color:#fff;text-shadow:0 0 15px rgba(0,0,0,1), 3px 3px 0px #3b82f6;pointer-events:none;text-align:center;width:100%; transition: all 0.3s;}
+    /* City Target Title */
+    .city-title{position:absolute;top:120px;left:50%;transform:translateX(-50%);z-index:1001;font-size:2.8rem;font-weight:900;color:#fff;text-shadow:0 0 20px rgba(0,0,0,1), 4px 4px 0px #3b82f6;pointer-events:none;text-align:center;width:100%;}
 
-    .btn{background:#3b82f6;color:#fff;border:none;padding:14px 28px;border-radius:12px;font-weight:700;cursor:pointer;font-size:1.1rem;transition:0.2s; margin-top: 10px;}
-    .btn:hover{background:#2563eb; transform: scale(1.05);}
+    .btn{background:#3b82f6;color:#fff;border:none;padding:16px 32px;border-radius:14px;font-weight:700;cursor:pointer;font-size:1.1rem;transition:0.2s; margin-top: 15px;}
+    .btn:hover{background:#2563eb; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);}
 
-    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.9);display:flex;align-items:center;justify-content:center;z-index:2000;backdrop-filter:blur(10px);}
-    .modal{background:#fff;color:#04263b;padding:40px;border-radius:24px;width:360px;text-align:center;}
+    /* End Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.92);display:flex;align-items:center;justify-content:center;z-index:2000;backdrop-filter:blur(12px);}
+    .modal{background:#fff;color:#04263b;padding:45px;border-radius:28px;width:380px;text-align:center;box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);}
     
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   </style>
 </head>
 <body>
@@ -39,17 +43,17 @@
   <div id="map"></div>
 
   <div class="info-bar">
-    <div class="info-item"><span class="info-label">⏱ Time</span><span id="time" class="info-value">00:00</span></div>
-    <div class="info-item"><span class="info-label">📍 Target</span><span class="info-value"><span id="progress">0</span>/50</span></div>
-    <div class="info-item"><span class="info-label">⭐ Score</span><span id="score" class="info-value">0</span></div>
+    <div class="info-item"><span class="info-label">Time</span><span id="time" class="info-value">00:00</span></div>
+    <div class="info-item"><span class="info-label">Progress</span><span class="info-value"><span id="progress">0</span>/50</span></div>
+    <div class="info-item"><span class="info-label">Score</span><span id="score" class="info-value">0</span></div>
     <div class="info-item" id="statusBox" style="display:none;"><span class="info-label">Status</span><span id="aliveStatus" class="info-value status-alive">ALIVE</span></div>
   </div>
 
   <div id="overlayStart" class="overlay-start">
     <div class="start-box">
       <h2>UK & Ireland Speedrun</h2>
-      <p><b>挑戰規則：</b><br>點擊誤差必須在 10km 以內。<br>一旦失敗即視為出局，但你仍可繼續練習，直到完成所有城市為止。</p>
-      <button id="startBtn" class="btn">開始挑戰</button>
+      <p><b>Survival Rules:</b><br>Your click must be within 10km of the target.<br>If you miss, you are "OUT", but the game continues for practice until all 50 cities are completed.</p>
+      <button id="startBtn" class="btn">Start Run</button>
     </div>
   </div>
 
@@ -57,9 +61,9 @@
 
   <div id="endModal" style="display:none" class="modal-backdrop">
     <div class="modal">
-      <h2 id="resultTitle">挑戰結束</h2>
-      <div id="stats" style="font-size:1.1rem; margin: 20px 0;"></div>
-      <button id="playAgainBtn" class="btn">再試一次</button>
+      <h2 id="resultTitle" style="font-size: 2rem; margin-bottom: 10px;">Game Over</h2>
+      <div id="stats" style="font-size:1.2rem; margin: 25px 0; color: #475569; line-height: 1.5;"></div>
+      <button id="playAgainBtn" class="btn">Try Again</button>
     </div>
   </div>
 
@@ -78,7 +82,6 @@
     const scoreEl=document.getElementById('score'), aliveStatusEl=document.getElementById('aliveStatus');
     const cityTitle=document.getElementById('cityTitle'), endModal=document.getElementById('endModal');
 
-    function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
     function haversine(a,b){
       const R=6371;
       const dLat=(b[0]-a[0])*Math.PI/180, dLon=(b[1]-a[1])*Math.PI/180;
@@ -87,7 +90,7 @@
     }
 
     function resetGame(){
-      cities = shuffle([...ALL_CITIES]).slice(0, 50);
+      cities = [...ALL_CITIES].sort(() => Math.random() - 0.5).slice(0, 50);
       index=0; score=0; started=false; isGameOver=false; deathCity="";
       clearMapObjects();
       progressEl.textContent="0"; scoreEl.textContent="0"; timeEl.textContent="00:00";
@@ -112,13 +115,11 @@
     }
 
     function showNextCity(){
-      if(index>=50){ endGame(); return; }
       answered=false;
       progressEl.textContent=index+1;
-      cityTitle.textContent=cities[index].name;
+      cityTitle.textContent = cities[index].name;
       cityTitle.style.display='block';
-      // 縮回預覽視角
-      map.flyTo([54.5, -4], 6, {duration: 1});
+      map.flyTo([54.5, -4], 6, {duration: 0.8, easeLinearity: 0.5});
     }
 
     map.on('click', function(e){
@@ -127,32 +128,31 @@
       const city=cities[index], clickCoords=[e.latlng.lat, e.latlng.lng];
       const dist=haversine(clickCoords, city.coords);
       
-      // 標記與圓圈
       markers.push(L.circleMarker(clickCoords, {radius:8, color:'#3b82f6', fillOpacity:1}).addTo(map));
       circles.push(L.circle(city.coords, {radius: 10000, color: '#10b981', weight: 3, fillOpacity: 0.2}).addTo(map));
       currentCityMarker = L.marker(city.coords).addTo(map).bindPopup(`<b>${city.name}</b><br>${dist.toFixed(1)} km`).openPopup();
 
-      // 分數邏輯：只有命中才給分
       if(dist <= 10) {
-        let points = Math.max(10, Math.round(100 - dist * 5));
-        score += points;
-        scoreEl.textContent = score; // 即時更新分數
-      } else {
-        if(!isGameOver) {
-          isGameOver=true; deathCity=city.name;
-          aliveStatusEl.textContent="OUT";
-          aliveStatusEl.className="info-value status-dead";
-        }
+        score += Math.max(10, Math.round(100 - dist * 5));
+        scoreEl.textContent = score;
+      } else if(!isGameOver) {
+        isGameOver=true; deathCity=city.name;
+        aliveStatusEl.textContent="OUT";
+        aliveStatusEl.className="info-value status-dead";
       }
 
-      // 鏡頭動畫：飛往正確城市
-      map.flyTo(city.coords, 9, {duration: 0.8});
+      map.flyTo(city.coords, 9, {duration: 0.6});
       
-      index++;
+      // Handle logic for next step or end
       setTimeout(()=>{
         clearMapObjects();
-        showNextCity();
-      }, 2000);
+        index++;
+        if(index < 50) {
+            showNextCity();
+        } else {
+            endGame();
+        }
+      }, 1800);
     });
 
     function clearMapObjects(){
@@ -162,12 +162,23 @@
     }
 
     function endGame(){
-      started=false; clearInterval(timerInterval);
+      started=false;
+      clearInterval(timerInterval);
       cityTitle.style.display='none';
-      document.getElementById('stats').innerHTML = isGameOver 
-        ? `他在 <b>${deathCity}</b> 失敗了。<br>最終分數：${score}<br>時間：${timeEl.textContent}`
-        : `完美存活！<br>最終分數：${score}<br>時間：${timeEl.textContent}`;
-      document.getElementById('resultTitle').textContent = isGameOver ? "挑戰失敗" : "恭喜破關";
+      
+      const stats = document.getElementById('stats');
+      const resultTitle = document.getElementById('resultTitle');
+
+      if(isGameOver) {
+        resultTitle.textContent = "Eliminated!";
+        resultTitle.style.color = "#ef4444";
+        stats.innerHTML = `You failed at <b>${deathCity}</b>.<br><br>Final Score: <b>${score}</b><br>Total Time: <b>${timeEl.textContent}</b>`;
+      } else {
+        resultTitle.textContent = "Survivor!";
+        resultTitle.style.color = "#10b981";
+        stats.innerHTML = `You completed all 50 cities!<br><br>Final Score: <b>${score}</b><br>Total Time: <b>${timeEl.textContent}</b>`;
+      }
+      
       endModal.style.display='flex';
     }
 
