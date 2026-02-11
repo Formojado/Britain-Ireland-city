@@ -54,7 +54,7 @@
     ];
 
     const TOTAL = 50;
-    let cities=[],index=0,started=false,answered=false,markers=[],circles=[],score=0,startTime=null,timerInterval=null,results=[];
+    let cities=[],index=0,started=false,answered=false,markers=[],circles=[],score=0,startTime=null,timerInterval=null,results=[],currentCityMarker=null;
 
     const map = L.map('map',{zoomControl:true,dragging:true}).setView([54.5,-4],6);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
@@ -107,9 +107,10 @@
       showNextCity();
     }
 
-    function updateUI(){progressEl.textContent=`${index}/${TOTAL}`;scoreEl.textContent=score;}
+    function updateUI(){progressEl.textContent=`${index+1}/${TOTAL}`;scoreEl.textContent=score;}
 
     function showNextCity(){
+      if(currentCityMarker){map.removeLayer(currentCityMarker); currentCityMarker=null;}
       clearMapObjects();
       answered=false;
       updateUI();
@@ -129,7 +130,7 @@
       const dist=haversine(clickCoords,city.coords);
       const c=L.circle(city.coords,{radius:10000,color:'#ff385c',fill:false}).addTo(map);
       circles.push(c);
-      L.marker(city.coords).addTo(map);
+      currentCityMarker=L.marker(city.coords).addTo(map);
       let points=0;
       let ok=false;
       if(dist<=10){ok=true;points=Math.max(0,Math.round(100-dist*10));}
@@ -142,7 +143,10 @@
       setTimeout(()=>{showNextCity()},1000);
     });
 
-    function clearMapObjects(){markers.forEach(m=>map.removeLayer(m));markers=[];circles.forEach(c=>map.removeLayer(c));circles=[];}
+    function clearMapObjects(){
+      markers.forEach(m=>map.removeLayer(m));markers=[];
+      circles.forEach(c=>map.removeLayer(c));circles=[];
+    }
 
     function endGame(){
       started=false;
